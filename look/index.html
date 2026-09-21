@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'" />
+<meta name="referrer" content="no-referrer" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>A look from Folded</title>
+<meta name="robots" content="noindex" />
+<link rel="stylesheet" href="/fonts/fonts.css" />
+<style>
+  :root { --bg:#EFE8DF; --surf:#FBF8F3; --ink:#2B2029; --muted:rgba(43,32,41,.62); --line:rgba(43,32,41,.2); --acc:#B23A5E; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:400 16px/1.7 Jost, system-ui, sans-serif; min-height:100vh; display:flex; flex-direction:column; }
+  .wrap { flex:1; max-width:560px; width:100%; margin:0 auto; padding:56px 24px 40px; }
+  .brand { font:500 11px Jost, sans-serif; letter-spacing:.44em; padding-left:.44em; color:var(--muted); }
+  .from { font:400 12px "IBM Plex Mono", monospace; color:var(--muted); margin-top:26px; letter-spacing:.06em; }
+  h1 { font:400 clamp(34px, 8vw, 46px)/1.05 "DM Serif Display", Georgia, serif; margin:8px 0 0; }
+  ul { list-style:none; margin:26px 0 0; padding:0; border:1px solid var(--line); background:var(--surf); }
+  li { border-bottom:1px solid var(--line); padding:14px 16px; display:flex; gap:14px; align-items:center; }
+  li:last-child { border-bottom:0; }
+  .sw { width:34px; height:44px; border:1px solid var(--line); flex:none; }
+  .k { font:500 9px Jost, sans-serif; letter-spacing:.2em; color:var(--muted); }
+  .t { font:400 19px "DM Serif Display", Georgia, serif; margin-top:2px; }
+  .d { font:400 12px Jost, sans-serif; color:var(--muted); letter-spacing:.08em; margin-top:2px; text-transform:uppercase; }
+  .open { display:block; margin-top:28px; background:var(--ink); color:var(--bg); text-align:center; padding:17px; font:500 10.5px Jost, sans-serif; letter-spacing:.22em; }
+  .note { font:400 14px/1.6 Jost, sans-serif; color:var(--muted); margin:18px 0 0; }
+  .get { font:400 13px Jost, sans-serif; color:var(--muted); margin-top:26px; }
+  a { color:var(--acc); text-decoration:none; }
+  .empty { font:400 italic 18px "DM Serif Display", Georgia, serif; color:var(--muted); margin-top:30px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">FOLDED</div>
+  <div class="from" id="from">A LOOK FROM A FRIEND</div>
+  <h1 id="title">A look</h1>
+  <ul id="pieces"></ul>
+  <a class="open" id="open" href="#">OPEN IN FOLDED</a>
+  <p class="note">If you have Folded, opening this rebuilds the look from your own closet — their photographs never travel, only what each piece is.</p>
+  <p class="get">Don't have it yet? <a href="https://apps.apple.com/app/folded-wear-what-you-own/id6812644589">Folded on the App Store</a>.</p>
+  <p class="empty" id="empty" hidden>This link doesn't carry a look. Ask your friend to send it again from the app.</p>
+</div>
+<script>
+(function () {
+  var CAT = { t: "Top", b: "Bottom", d: "Dress", s: "Shoes", a: "Accessory", w: "Swim" };
+  function unb64url(str) { var pad = str.length % 4 ? "=".repeat(4 - (str.length % 4)) : ""; return decodeURIComponent(escape(atob(str.replace(/-/g, "+").replace(/_/g, "/") + pad))); }
+  var hash = (location.hash || "").slice(1), data = null;
+  try { data = hash ? JSON.parse(unb64url(hash)) : null; } catch (e) { data = null; }
+  var esc = function (t) { return String(t || "").replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+  if (!data || data.v !== 1 || !Array.isArray(data.p)) { document.getElementById("empty").hidden = false; document.getElementById("pieces").hidden = true; document.getElementById("open").hidden = true; return; }
+  document.getElementById("title").textContent = data.t || "A look";
+  document.getElementById("from").textContent = (data.u ? data.u.toUpperCase() + "’S LOOK" : "A LOOK FROM A FRIEND") + " · " + data.p.length + " PIECES";
+  document.getElementById("pieces").innerHTML = data.p.map(function (p) {
+    var hex = /^#[0-9a-f]{6}$/i.test(p.h) ? p.h : "#C7C2BB";
+    return '<li><span class="sw" style="background:' + hex + '"></span><span><div class="k">' + esc(CAT[p.c] || "Piece") + '</div><div class="t">' + esc(p.n) + '</div><div class="d">' + esc([p.f].concat(p.g || []).filter(Boolean).join(" · ")) + '</div></span></li>';
+  }).join("");
+  document.getElementById("open").href = "folded://look#" + hash;
+})();
+</script>
+</body>
+</html>
