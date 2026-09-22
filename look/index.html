@@ -6,11 +6,17 @@
 <meta name="referrer" content="no-referrer" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>A look from Folded</title>
+<meta property="og:title" content="A look from Folded" />
+<meta property="og:description" content="Open it in Folded and it's rebuilt from your own closet." />
+<meta property="og:site_name" content="Folded" />
+<link rel="icon" href="/icon.png" />
+<link rel="apple-touch-icon" href="/icon.png" />
 <meta name="robots" content="noindex" />
 <link rel="stylesheet" href="/fonts/fonts.css" />
 <style>
   :root { --bg:#EFE8DF; --surf:#FBF8F3; --ink:#2B2029; --muted:rgba(43,32,41,.62); --line:rgba(43,32,41,.2); --acc:#B23A5E; }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body { margin:0; background:var(--bg); color:var(--ink); font:400 16px/1.7 Jost, system-ui, sans-serif; min-height:100vh; display:flex; flex-direction:column; }
   .wrap { flex:1; max-width:560px; width:100%; margin:0 auto; padding:56px 24px 40px; }
   .brand { font:500 11px Jost, sans-serif; letter-spacing:.44em; padding-left:.44em; color:var(--muted); }
@@ -25,6 +31,7 @@
   .d { font:400 12px Jost, sans-serif; color:var(--muted); letter-spacing:.08em; margin-top:2px; text-transform:uppercase; }
   .open { display:block; margin-top:28px; background:var(--ink); color:var(--bg); text-align:center; padding:17px; font:500 10.5px Jost, sans-serif; letter-spacing:.22em; }
   .note { font:400 14px/1.6 Jost, sans-serif; color:var(--muted); margin:18px 0 0; }
+  .stuck { font:400 14px/1.6 Jost, sans-serif; color:var(--acc); margin:14px 0 0; }
   .get { font:400 13px Jost, sans-serif; color:var(--muted); margin-top:26px; }
   a { color:var(--acc); text-decoration:none; }
   .empty { font:400 italic 18px "DM Serif Display", Georgia, serif; color:var(--muted); margin-top:30px; }
@@ -37,6 +44,7 @@
   <h1 id="title">A look</h1>
   <ul id="pieces"></ul>
   <a class="open" id="open" href="#">OPEN IN FOLDED</a>
+  <p class="stuck" id="stuck" hidden>Nothing happened? This needs Folded 1.1 or newer. Update it, then tap again.</p>
   <p class="note">If you have Folded, opening this rebuilds the look from your own closet — their photographs never travel, only what each piece is.</p>
   <p class="get">Don't have it yet? <a href="https://apps.apple.com/app/folded-wear-what-you-own/id6812644589">Folded on the App Store</a>.</p>
   <p class="empty" id="empty" hidden>This link doesn't carry a look. Ask your friend to send it again from the app.</p>
@@ -45,8 +53,10 @@
 (function () {
   var CAT = { t: "Top", b: "Bottom", d: "Dress", s: "Shoes", a: "Accessory", w: "Swim" };
   function unb64url(str) { var pad = str.length % 4 ? "=".repeat(4 - (str.length % 4)) : ""; return decodeURIComponent(escape(atob(str.replace(/-/g, "+").replace(/_/g, "/") + pad))); }
-  var hash = (location.hash || "").slice(1), data = null;
-  try { data = hash ? JSON.parse(unb64url(hash)) : null; } catch (e) { data = null; }
+  // ?l=… is the current form; #… is what early builds sent, still accepted
+  var m = /[?&]l=([A-Za-z0-9_-]+)/.exec(location.search) || /^#([A-Za-z0-9_-]+)$/.exec(location.hash || "");
+  var raw = m ? m[1] : "", data = null;
+  try { data = raw ? JSON.parse(unb64url(raw)) : null; } catch (e) { data = null; }
   var esc = function (t) { return String(t || "").replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
   if (!data || data.v !== 1 || !Array.isArray(data.p)) { document.getElementById("empty").hidden = false; document.getElementById("pieces").hidden = true; document.getElementById("open").hidden = true; return; }
   document.getElementById("title").textContent = data.t || "A look";
@@ -55,7 +65,20 @@
     var hex = /^#[0-9a-f]{6}$/i.test(p.h) ? p.h : "#C7C2BB";
     return '<li><span class="sw" style="background:' + hex + '"></span><span><div class="k">' + esc(CAT[p.c] || "Piece") + '</div><div class="t">' + esc(p.n) + '</div><div class="d">' + esc([p.f].concat(p.g || []).filter(Boolean).join(" · ")) + '</div></span></li>';
   }).join("");
-  document.getElementById("open").href = "folded://look#" + hash;
+  // the app accepts both forms; # keeps the button working on builds that
+  // only knew the fragment (iMessage only mangles fragments in message text)
+  var open = document.getElementById("open");
+  open.href = "folded://look#" + raw;
+  // If the tap opened Folded, this page goes into the background. If it is
+  // still showing a moment later, no installed app claimed the link: say so.
+  // (Visibility only — Safari's own alerts take focus but leave the page
+  // showing, and a slow "Open?" decision still hides the note once it opens.)
+  var stuck = document.getElementById("stuck");
+  document.addEventListener("visibilitychange", function () { if (document.hidden) stuck.hidden = true; });
+  window.addEventListener("pagehide", function () { stuck.hidden = true; });
+  open.addEventListener("click", function () {
+    setTimeout(function () { if (!document.hidden) stuck.hidden = false; }, 2500);
+  });
 })();
 </script>
 </body>
